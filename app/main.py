@@ -1,6 +1,6 @@
 import os
 from fastapi import FastAPI, Request, Depends, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -87,15 +87,7 @@ async def login_submit(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
 
-        response = templates.TemplateResponse(
-            "dashboard.html",
-            {
-                "request": request,
-                "username": user.username,
-                "articles": [],
-                "suppliers": []
-            }
-        )
+        response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
         return response
     except Exception as e:
@@ -111,6 +103,8 @@ async def dashboard(
         request: Request,
         current_user: User = Depends(get_current_active_user)
 ):
+    if not current_user:
+        return RedirectResponse(url="/login")
     async with aiosqlite.connect("suppliers.db") as db:
         cursor = await db.execute("SELECT * FROM articles WHERE user_id = ?", (current_user.id,))
         articles = await cursor.fetchall()
@@ -139,6 +133,8 @@ async def add_article(
         article_code: str = Form(...),
         current_user: User = Depends(get_current_active_user)
 ):
+    if not current_user:
+        return RedirectResponse(url="/login")
     async with aiosqlite.connect("suppliers.db") as db:
         await db.execute(
             "INSERT INTO articles (code, user_id) VALUES (?, ?)",
@@ -155,6 +151,8 @@ async def search_suppliers_for_article(
         article_id: int,
         current_user: User = Depends(get_current_active_user)
 ):
+    if not current_user:
+        return RedirectResponse(url="/login")
     # Проверяем, есть ли уже поставщики для этого артикула
     async with aiosqlite.connect("suppliers.db") as db:
         cursor = await db.execute("SELECT code FROM articles WHERE id = ? AND user_id = ?",
@@ -314,3 +312,10 @@ async def logout():
     response = RedirectResponse(url="/login")
     response.delete_cookie("access_token")
     return response
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 401:
+        return RedirectResponse(url="/login")
+    return await app.default_exception_handler(request, exc)

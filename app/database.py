@@ -73,10 +73,10 @@ async def init_db():
 
         # Добавляем тестовые шаблоны писем, если их нет
         await db.execute("""
-            INSERT OR IGNORE INTO email_templates (name, subject, price_request) VALUES 
-            ('Price Request', 'Request for quotation - {article}', 'Dear {supplier},\\n\\nWe are interested in your product {article}. Please provide your best offer.\\n\\nBest regards,\\nPurchasing Department'),
-            ('Information Request', 'Information request - {article}', 'Dear {supplier},\\n\\nWe would like to get more information about your product {article}.\\n\\nBest regards,\\nPurchasing Department'),
-            ('Offer Submission', 'Offer submission - {article}', 'Dear {supplier},\\n\\nThank you for your offer. We will review it and get back to you.\\n\\nBest regards,\\nPurchasing Department')
+            INSERT OR IGNORE INTO email_templates (name, subject, body) VALUES 
+            ('Price Request', 'Request for quotation - {article}', 'Dear {supplier},\n\nWe are interested in your product {article}. Please provide your best offer.\n\nBest regards,\nPurchasing Department'),
+            ('Information Request', 'Information request - {article}', 'Dear {supplier},\n\nWe would like to get more information about your product {article}.\n\nBest regards,\nPurchasing Department'),
+            ('Offer Submission', 'Offer submission - {article}', 'Dear {supplier},\n\nThank you for your offer. We will review it and get back to you.\n\nBest regards,\nPurchasing Department')
         """)
 
         await db.commit()

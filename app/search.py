@@ -4,7 +4,7 @@ import whois
 from datetime import datetime
 import re
 import aiosqlite
-from typing import List, Dict
+from typing import List, Dict, Optional
 import asyncio
 
 # Список агрегаторов, которые нужно игнорировать

@@ -3,8 +3,8 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status
-from .models import TokenData, UserInDB
+from fastapi import Depends, HTTPException, status, Request
+from .models import TokenData, UserInDB, User
 import aiosqlite
 
 SECRET_KEY = "your-secret-key-here"
@@ -59,7 +59,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_token_from_request(request: Request):
+    token = request.cookies.get("access_token")
+    if token and token.startswith("Bearer "):
+        token = token[len("Bearer ") :]
+    return token
+
+
+async def get_current_user(request: Request, token: str = Depends(get_token_from_request)):
+    # если token пустой, пробуем из Authorization (oauth2_scheme)
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[len("Bearer ") :]
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -71,9 +83,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except JWTError:
+    except Exception:
         raise credentials_exception
-
     user = await get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
