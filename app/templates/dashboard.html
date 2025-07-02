@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Supplier Search Pipeline</h2>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Add New Article</h5>
+    </div>
+    <div class="card-body">
+        <form id="addArticleForm" hx-post="/add_article" hx-target="#articlesTable" hx-swap="outerHTML">
+            <div class="input-group">
+                <input type="text" class="form-control" name="article_code" placeholder="Enter article code" required>
+                <button class="btn btn-primary" type="submit">Add Article</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5>Articles</h5>
+    </div>
+    <div class="card-body">
+        <div id="articlesTable">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Article Code</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td>{{ article[1] }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary"
+                                    hx-post="/search_suppliers/{{ article[0] }}"
+                                    hx-target="#suppliers-{{ article[0] }}"
+                                    hx-swap="outerHTML">
+                                Find Suppliers
+                            </button>
+                        </td>
+                    </tr>
+                    <tr id="suppliers-{{ article[0] }}">
+                        {% for supplier in suppliers %}
+                            {% if supplier[1] == article[0] %}
+                            <tr>
+                                <td colspan="2">
+                                    <div class="ms-4">
+                                        <strong>{{ supplier[2] }}</strong> ({{ supplier[5] }})
+                                        <div class="small">Website: <a href="{{ supplier[3] }}" target="_blank">{{ supplier[3] }}</a></div>
+                                        <div class="small">Email: {{ supplier[4] }}</div>
+                                        <button class="btn btn-sm btn-success mt-2"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#emailModal"
+                                                data-supplier-id="{{ supplier[0] }}">
+                                            Send Email
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Email to Supplier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sendEmailForm">
+                    <input type="hidden" id="supplierId" name="supplier_id">
+                    <div class="mb-3">
+                        <label for="senderEmail" class="form-label">From</label>
+                        <select class="form-select" id="senderEmail" name="sender_email" required>
+                            <option value="">Select sender email</option>
+                            <option value="your.email@gmail.com">your.email@gmail.com</option>
+                            <option value="your.email@yandex.ru">your.email@yandex.ru</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailTemplate" class="form-label">Template</label>
+                        <select class="form-select" id="emailTemplate" name="template_id" required>
+                            <option value="">Select template</option>
+                            {% for template in email_templates %}
+                            <option value="{{ template.id }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="sendEmailBtn">Send Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
